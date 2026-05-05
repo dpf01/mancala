@@ -48,9 +48,10 @@ An array of integers of size 14:
 The future of the game search capabilities is outlined in [SEARCH_EVOLUTION.md](SEARCH_EVOLUTION.md). 
 
 ### Progress
-- [x] **Implement Alpha-Beta Pruning:** Optimized the minimax search by pruning branches that cannot influence the final decision. This significantly reduces the number of nodes visited.
-- [ ] **Introduce Iterative Deepening:** Planned.
-- [ ] **Heuristic Evaluation:** Planned.
+- [x] **Implement Alpha-Beta Pruning:** Optimized the minimax search by pruning branches that cannot influence the final decision.
+- [x] **Introduce Iterative Deepening:** Provides immediate results at increasing depths, improving the user experience and search efficiency.
+- [x] **Heuristic Evaluation:** Implemented a score-based evaluation for non-terminal leaf nodes.
+- [x] **Transposition Table (Memoization) Fixes:** Updated the cache to handle search depth and pruning state correctly.
 - [ ] **Principal Variation Reporting:** Planned.
 
 ## Implementation Details

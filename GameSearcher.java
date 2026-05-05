@@ -1,8 +1,18 @@
 import java.util.*;
 
 public class GameSearcher {
-    private Map<BoardState, GameResult> memo = new HashMap<>();
-    private int targetDepth = -1;
+    private static class SearchEntry {
+        GameResult result;
+        int depth;
+
+        SearchEntry(GameResult result, int depth) {
+            this.result = result;
+            this.depth = depth;
+        }
+    }
+
+    private Map<BoardState, SearchEntry> memo = new HashMap<>();
+    private int maxDepthLimit = -1;
     private long nodesVisited = 0;
     private long lastProgressReport = System.currentTimeMillis();
 
@@ -20,7 +30,6 @@ public class GameSearcher {
 
     /**
      * Compact representation of the board state for memoization.
-     * Packs 14 pits (max 48 stones each -> 6 bits) and player index into two longs.
      */
     private static class BoardState {
         private final long low;
@@ -28,17 +37,14 @@ public class GameSearcher {
 
         BoardState(Board board, int playerIndex) {
             long l = 0;
-            // First 10 pits (0-9)
             for (int i = 0; i < 10; i++) {
                 l |= ((long) (board.getPits(i) & 0x3F)) << (i * 6);
             }
             this.low = l;
             long h = 0;
-            // Remaining 4 pits (10-13)
             for (int i = 10; i < 14; i++) {
                 h |= ((long) (board.getPits(i) & 0x3F)) << ((i - 10) * 6);
             }
-            // Player index (1 or 2)
             h |= (long) (playerIndex - 1) << 24;
             this.high = h;
         }
@@ -53,72 +59,74 @@ public class GameSearcher {
 
         @Override
         public int hashCode() {
-            // XOR folding for a decent hash
             long combined = low ^ high;
             return (int) (combined ^ (combined >>> 32));
         }
     }
 
-    public GameSearcher(int targetDepth) {
-        this.targetDepth = targetDepth;
+    public GameSearcher(int maxDepthLimit) {
+        this.maxDepthLimit = maxDepthLimit;
     }
 
     public void run() {
         Board board = new Board();
-        // Alpha-Beta: P1 (Maximizer) wants P1_WINS (high ordinal), P2 (Minimizer) wants P2_WINS (low ordinal).
-        // Initial Alpha = P2_WINS (0, worst for P1), Initial Beta = P1_WINS (2, worst for P2).
-        dfs(board, 1, new StringBuilder(), GameResult.P2_WINS, GameResult.P1_WINS);
-        System.out.println("Search complete. Total nodes visited: " + nodesVisited);
+        int endDepth = (maxDepthLimit == -1) ? 50 : maxDepthLimit;
+
+        System.out.println("Starting Iterative Deepening Search...");
+        for (int d = 1; d <= endDepth; d++) {
+            nodesVisited = 0;
+            long start = System.currentTimeMillis();
+            GameResult result = dfs(board, 1, new StringBuilder(), d, GameResult.P2_WINS, GameResult.P1_WINS);
+            long end = System.currentTimeMillis();
+            
+            System.out.printf("Depth %d complete. Result: %-15s | Nodes: %-10d | Time: %dms\n", 
+                d, result.toForcedString(), nodesVisited, (end - start));
+            
+            if (result == GameResult.P1_WINS && maxDepthLimit == -1) {
+                // If we found a forced win for the whole game, we could technically stop,
+                // but ID is usually used for time-limited search or best-move finding.
+            }
+        }
     }
 
-    private GameResult dfs(Board board, int playerIndex, StringBuilder moveSequence, GameResult alpha, GameResult beta) {
+    private GameResult evaluate(Board board) {
+        int score1 = board.getPlayer1Score();
+        int score2 = board.getPlayer2Score();
+        if (score1 > score2) return GameResult.P1_WINS;
+        if (score2 > score1) return GameResult.P2_WINS;
+        return GameResult.TIE;
+    }
+
+    private GameResult dfs(Board board, int playerIndex, StringBuilder moveSequence, int remainingDepth, GameResult alpha, GameResult beta) {
         nodesVisited++;
         if (nodesVisited % 1000000 == 0) {
             reportProgress(moveSequence.toString());
         }
 
         BoardState stateKey = new BoardState(board, playerIndex);
-        GameResult cached = memo.get(stateKey);
-        if (cached != null) {
-            return cached;
+        SearchEntry cached = memo.get(stateKey);
+        if (cached != null && cached.depth >= remainingDepth) {
+            return cached.result;
         }
 
-        // Check if game is already decided by score
-        if (board.getPlayer1Score() > 24) {
-            if (targetDepth == -1) {
-                System.out.println(moveSequence + " -> P1_WINS (Score: " + board.getPlayer1Score() + "-" + board.getPlayer2Score() + ")");
-            }
-            return GameResult.P1_WINS;
-        }
-        if (board.getPlayer2Score() > 24) {
-            if (targetDepth == -1) {
-                System.out.println(moveSequence + " -> P2_WINS (Score: " + board.getPlayer1Score() + "-" + board.getPlayer2Score() + ")");
-            }
-            return GameResult.P2_WINS;
-        }
+        // Terminal states
+        if (board.getPlayer1Score() > 24) return GameResult.P1_WINS;
+        if (board.getPlayer2Score() > 24) return GameResult.P2_WINS;
 
         if (board.isGameOver()) {
-            // We need a copy to collect remaining without affecting the current branch's board
             int[] currentPits = new int[Board.TOTAL_PITS];
             board.copyPitsTo(currentPits);
             Board finalBoard = new Board(currentPits);
             finalBoard.collectRemaining();
             
-            GameResult result;
-            if (finalBoard.getPlayer1Score() > finalBoard.getPlayer2Score()) {
-                result = GameResult.P1_WINS;
-            } else if (finalBoard.getPlayer2Score() > finalBoard.getPlayer1Score()) {
-                result = GameResult.P2_WINS;
-            } else {
-                result = GameResult.TIE;
-            }
-            
-            if (targetDepth == -1) {
-                System.out.println(moveSequence + " -> " + result + " (" + finalBoard.getPlayer1Score() + "-" + finalBoard.getPlayer2Score() + ")");
-            }
-            
-            memo.put(stateKey, result);
-            return result;
+            if (finalBoard.getPlayer1Score() > finalBoard.getPlayer2Score()) return GameResult.P1_WINS;
+            if (finalBoard.getPlayer2Score() > finalBoard.getPlayer1Score()) return GameResult.P2_WINS;
+            return GameResult.TIE;
+        }
+
+        // Depth limit
+        if (remainingDepth == 0) {
+            return evaluate(board);
         }
 
         List<Integer> validMoves = new ArrayList<>();
@@ -134,6 +142,7 @@ public class GameSearcher {
         int[] savedPits = new int[Board.TOTAL_PITS];
         board.copyPitsTo(savedPits);
 
+        boolean pruned = false;
         for (int move : validMoves) {
             boolean extraTurn = board.move(move, playerIndex);
             
@@ -148,13 +157,12 @@ public class GameSearcher {
             int currentLen = moveSequence.length();
             moveSequence.append(moveChar);
             
-            GameResult result = dfs(board, nextPlayer, moveSequence, alpha, beta);
+            GameResult result = dfs(board, nextPlayer, moveSequence, remainingDepth - 1, alpha, beta);
             
-            moveSequence.setLength(currentLen); // Backtrack string
-            board.copyPitsFrom(savedPits); // Backtrack board
+            moveSequence.setLength(currentLen);
+            board.copyPitsFrom(savedPits);
 
             if (playerIndex == 1) {
-                // Maximizer: P1
                 if (bestResult == null || result.ordinal() > bestResult.ordinal()) {
                     bestResult = result;
                 }
@@ -162,7 +170,6 @@ public class GameSearcher {
                     alpha = bestResult;
                 }
             } else {
-                // Minimizer: P2
                 if (bestResult == null || result.ordinal() < bestResult.ordinal()) {
                     bestResult = result;
                 }
@@ -172,15 +179,15 @@ public class GameSearcher {
             }
 
             if (alpha.ordinal() >= beta.ordinal()) {
-                break; // Alpha-Beta Pruning
+                pruned = true;
+                break;
             }
         }
 
-        if (moveSequence.length() == targetDepth) {
-            System.out.println(moveSequence + " -> " + bestResult.toForcedString());
+        if (!pruned) {
+            memo.put(stateKey, new SearchEntry(bestResult, remainingDepth));
         }
 
-        memo.put(stateKey, bestResult);
         return bestResult;
     }
 
