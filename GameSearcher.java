@@ -2,17 +2,38 @@ import java.util.*;
 
 public class GameSearcher {
     private Map<String, GameResult> memo = new HashMap<>();
+    private int targetDepth = -1;
+    private long nodesVisited = 0;
+    private long lastProgressReport = System.currentTimeMillis();
 
     public enum GameResult {
-        P1_WINS, P2_WINS, TIE
+        P1_WINS, P2_WINS, TIE;
+
+        public String toForcedString() {
+            switch (this) {
+                case P1_WINS: return "P1_CAN_FORCE_WIN";
+                case P2_WINS: return "P2_CAN_FORCE_WIN";
+                default: return "CAN_FORCE_TIE";
+            }
+        }
+    }
+
+    public GameSearcher(int targetDepth) {
+        this.targetDepth = targetDepth;
     }
 
     public void run() {
         Board board = new Board();
         dfs(board, 1, "");
+        System.out.println("Search complete. Total nodes visited: " + nodesVisited);
     }
 
     private GameResult dfs(Board board, int playerIndex, String moveSequence) {
+        nodesVisited++;
+        if (nodesVisited % 100000 == 0) {
+            reportProgress(moveSequence);
+        }
+
         String stateKey = board.getStateKey() + "|" + playerIndex;
         if (memo.containsKey(stateKey)) {
             return memo.get(stateKey);
@@ -20,11 +41,15 @@ public class GameSearcher {
 
         // Check if game is already decided by score
         if (board.getPlayer1Score() > 24) {
-            System.out.println(moveSequence + " -> User wins (Score: " + board.getPlayer1Score() + "-" + board.getPlayer2Score() + ")");
+            if (targetDepth == -1) {
+                System.out.println(moveSequence + " -> P1_WINS (Score: " + board.getPlayer1Score() + "-" + board.getPlayer2Score() + ")");
+            }
             return GameResult.P1_WINS;
         }
         if (board.getPlayer2Score() > 24) {
-            System.out.println(moveSequence + " -> Computer wins (Score: " + board.getPlayer1Score() + "-" + board.getPlayer2Score() + ")");
+            if (targetDepth == -1) {
+                System.out.println(moveSequence + " -> P2_WINS (Score: " + board.getPlayer1Score() + "-" + board.getPlayer2Score() + ")");
+            }
             return GameResult.P2_WINS;
         }
 
@@ -34,14 +59,16 @@ public class GameSearcher {
             GameResult result;
             if (finalBoard.getPlayer1Score() > finalBoard.getPlayer2Score()) {
                 result = GameResult.P1_WINS;
-                System.out.println(moveSequence + " -> User wins (" + finalBoard.getPlayer1Score() + "-" + finalBoard.getPlayer2Score() + ")");
             } else if (finalBoard.getPlayer2Score() > finalBoard.getPlayer1Score()) {
                 result = GameResult.P2_WINS;
-                System.out.println(moveSequence + " -> Computer wins (" + finalBoard.getPlayer1Score() + "-" + finalBoard.getPlayer2Score() + ")");
             } else {
                 result = GameResult.TIE;
-                System.out.println(moveSequence + " -> Tie (" + finalBoard.getPlayer1Score() + "-" + finalBoard.getPlayer2Score() + ")");
             }
+            
+            if (targetDepth == -1) {
+                System.out.println(moveSequence + " -> " + result + " (" + finalBoard.getPlayer1Score() + "-" + finalBoard.getPlayer2Score() + ")");
+            }
+            
             memo.put(stateKey, result);
             return result;
         }
@@ -55,9 +82,7 @@ public class GameSearcher {
             }
         }
 
-        boolean canP1ForceWin = false;
-        boolean canP2ForceWin = false;
-        boolean canForceTie = false;
+        GameResult bestResult = null;
 
         for (int move : validMoves) {
             Board nextBoard = new Board(board.getPitsArray());
@@ -73,23 +98,36 @@ public class GameSearcher {
             int nextPlayer = extraTurn ? playerIndex : (playerIndex == 1 ? 2 : 1);
             GameResult result = dfs(nextBoard, nextPlayer, moveSequence + moveChar);
 
-            if (result == GameResult.P1_WINS) canP1ForceWin = true;
-            else if (result == GameResult.P2_WINS) canP2ForceWin = true;
-            else canForceTie = true;
+            if (bestResult == null) {
+                bestResult = result;
+            } else {
+                if (playerIndex == 1) {
+                    // P1 wants P1_WINS > TIE > P2_WINS
+                    if (result == GameResult.P1_WINS || (result == GameResult.TIE && bestResult == GameResult.P2_WINS)) {
+                        bestResult = result;
+                    }
+                } else {
+                    // P2 wants P2_WINS > TIE > P1_WINS
+                    if (result == GameResult.P2_WINS || (result == GameResult.TIE && bestResult == GameResult.P1_WINS)) {
+                        bestResult = result;
+                    }
+                }
+            }
         }
 
-        GameResult finalResult;
-        if (playerIndex == 1) {
-            if (canP1ForceWin) finalResult = GameResult.P1_WINS;
-            else if (canForceTie) finalResult = GameResult.TIE;
-            else finalResult = GameResult.P2_WINS;
-        } else {
-            if (canP2ForceWin) finalResult = GameResult.P2_WINS;
-            else if (canForceTie) finalResult = GameResult.TIE;
-            else finalResult = GameResult.P1_WINS;
+        if (moveSequence.length() == targetDepth) {
+            System.out.println(moveSequence + " -> " + bestResult.toForcedString());
         }
 
-        memo.put(stateKey, finalResult);
-        return finalResult;
+        memo.put(stateKey, bestResult);
+        return bestResult;
+    }
+
+    private void reportProgress(String currentPath) {
+        long now = System.currentTimeMillis();
+        if (now - lastProgressReport > 5000) { // Report every 5 seconds if nodes keep being visited
+            System.err.println("Progress: " + nodesVisited + " nodes visited. Current path: " + currentPath);
+            lastProgressReport = now;
+        }
     }
 }

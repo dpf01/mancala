@@ -24,9 +24,15 @@ To run the exhaustive search mode, run:
 java MancalaGame --search
 ```
 
+To limit search output to a specific depth (number of moves) and see forced win/tie outcomes, run:
+
+```bash
+java MancalaGame --search --depth <n>
+```
+
 ## Game Modes
 - **Interactive Mode**: Play against the computer (Random strategy).
-- **Search Mode**: Exhaustively explores all possible games and identifies winning strategies.
+- **Search Mode**: Exhaustively explores all possible games using minimax and identifies forced winning strategies. Supports depth-limited output and reports progress.
 
 ## Game Rules
 - The game is played between a User and a Computer.

@@ -30,7 +30,7 @@ An array of integers of size 14:
 - Index 13: Player 2 (Computer) mancala.
 
 ### Exhaustive Search Mode (New)
-- Goal: Explore all possible game states using Depth-First Search (DFS).
+- Goal: Explore all possible game states using Depth-First Search (DFS) and Minimax.
 - Player 1 (User side) always goes first.
 - Move Representation:
   - Player 1: Uppercase 'A' through 'F'.
@@ -38,8 +38,11 @@ An array of integers of size 14:
 - Pruning/Stopping Conditions:
   - If a player's mancala contains more than 24 stones (majority of 48).
   - If a game state has already been visited (memoization using a Map).
-- Output: Move sequences for completed games and the outcome.
-- State Annotation: Identify nodes where a player can force a win.
+- Output: 
+  - Move sequences for completed games and the outcome.
+  - If `--depth` is specified, only intermediate nodes at that depth are shown with their forced outcomes.
+- State Annotation: Minimax algorithm identifies nodes where a player can force a win (`P1_CAN_FORCE_WIN`, `P2_CAN_FORCE_WIN`, `CAN_FORCE_TIE`).
+- Progress: Periodically reports nodes visited and current path to `stderr`.
 
 ## Implementation Details
 
