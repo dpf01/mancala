@@ -17,8 +17,12 @@ public class Board {
         this.pits = Arrays.copyOf(pits, TOTAL_PITS);
     }
 
-    public int[] getPitsArray() {
-        return Arrays.copyOf(pits, TOTAL_PITS);
+    public void copyPitsTo(int[] dest) {
+        System.arraycopy(pits, 0, dest, 0, TOTAL_PITS);
+    }
+
+    public void copyPitsFrom(int[] src) {
+        System.arraycopy(src, 0, pits, 0, TOTAL_PITS);
     }
 
     public String getStateKey() {

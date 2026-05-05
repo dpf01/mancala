@@ -1,7 +1,7 @@
 import java.util.*;
 
 public class GameSearcher {
-    private Map<String, GameResult> memo = new HashMap<>();
+    private Map<BoardState, GameResult> memo = new HashMap<>();
     private int targetDepth = -1;
     private long nodesVisited = 0;
     private long lastProgressReport = System.currentTimeMillis();
@@ -18,25 +18,67 @@ public class GameSearcher {
         }
     }
 
+    /**
+     * Compact representation of the board state for memoization.
+     * Packs 14 pits (max 48 stones each -> 6 bits) and player index into two longs.
+     */
+    private static class BoardState {
+        private final long low;
+        private final long high;
+
+        BoardState(Board board, int playerIndex) {
+            long l = 0;
+            // First 10 pits (0-9)
+            for (int i = 0; i < 10; i++) {
+                l |= ((long) (board.getPits(i) & 0x3F)) << (i * 6);
+            }
+            this.low = l;
+            long h = 0;
+            // Remaining 4 pits (10-13)
+            for (int i = 10; i < 14; i++) {
+                h |= ((long) (board.getPits(i) & 0x3F)) << ((i - 10) * 6);
+            }
+            // Player index (1 or 2)
+            h |= (long) (playerIndex - 1) << 24;
+            this.high = h;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof BoardState)) return false;
+            BoardState that = (BoardState) o;
+            return low == that.low && high == that.high;
+        }
+
+        @Override
+        public int hashCode() {
+            // XOR folding for a decent hash
+            long combined = low ^ high;
+            return (int) (combined ^ (combined >>> 32));
+        }
+    }
+
     public GameSearcher(int targetDepth) {
         this.targetDepth = targetDepth;
     }
 
     public void run() {
         Board board = new Board();
-        dfs(board, 1, "");
+        dfs(board, 1, new StringBuilder());
         System.out.println("Search complete. Total nodes visited: " + nodesVisited);
     }
 
-    private GameResult dfs(Board board, int playerIndex, String moveSequence) {
+    private GameResult dfs(Board board, int playerIndex, StringBuilder moveSequence) {
         nodesVisited++;
-        if (nodesVisited % 100000 == 0) {
-            reportProgress(moveSequence);
+        if (nodesVisited % 1000000 == 0) {
+            reportProgress(moveSequence.toString());
         }
 
-        String stateKey = board.getStateKey() + "|" + playerIndex;
-        if (memo.containsKey(stateKey)) {
-            return memo.get(stateKey);
+        BoardState stateKey = new BoardState(board, playerIndex);
+        GameResult cached = memo.get(stateKey);
+        if (cached != null) {
+            return cached;
         }
 
         // Check if game is already decided by score
@@ -54,8 +96,12 @@ public class GameSearcher {
         }
 
         if (board.isGameOver()) {
-            Board finalBoard = new Board(board.getPitsArray());
+            // We need a copy to collect remaining without affecting the current branch's board
+            int[] currentPits = new int[Board.TOTAL_PITS];
+            board.copyPitsTo(currentPits);
+            Board finalBoard = new Board(currentPits);
             finalBoard.collectRemaining();
+            
             GameResult result;
             if (finalBoard.getPlayer1Score() > finalBoard.getPlayer2Score()) {
                 result = GameResult.P1_WINS;
@@ -83,10 +129,11 @@ public class GameSearcher {
         }
 
         GameResult bestResult = null;
+        int[] savedPits = new int[Board.TOTAL_PITS];
+        board.copyPitsTo(savedPits);
 
         for (int move : validMoves) {
-            Board nextBoard = new Board(board.getPitsArray());
-            boolean extraTurn = nextBoard.move(move, playerIndex);
+            boolean extraTurn = board.move(move, playerIndex);
             
             char moveChar;
             if (playerIndex == 1) {
@@ -96,18 +143,22 @@ public class GameSearcher {
             }
 
             int nextPlayer = extraTurn ? playerIndex : (playerIndex == 1 ? 2 : 1);
-            GameResult result = dfs(nextBoard, nextPlayer, moveSequence + moveChar);
+            int currentLen = moveSequence.length();
+            moveSequence.append(moveChar);
+            
+            GameResult result = dfs(board, nextPlayer, moveSequence);
+            
+            moveSequence.setLength(currentLen); // Backtrack string
+            board.copyPitsFrom(savedPits); // Backtrack board
 
             if (bestResult == null) {
                 bestResult = result;
             } else {
                 if (playerIndex == 1) {
-                    // P1 wants P1_WINS > TIE > P2_WINS
                     if (result == GameResult.P1_WINS || (result == GameResult.TIE && bestResult == GameResult.P2_WINS)) {
                         bestResult = result;
                     }
                 } else {
-                    // P2 wants P2_WINS > TIE > P1_WINS
                     if (result == GameResult.P2_WINS || (result == GameResult.TIE && bestResult == GameResult.P1_WINS)) {
                         bestResult = result;
                     }
@@ -125,7 +176,7 @@ public class GameSearcher {
 
     private void reportProgress(String currentPath) {
         long now = System.currentTimeMillis();
-        if (now - lastProgressReport > 5000) { // Report every 5 seconds if nodes keep being visited
+        if (now - lastProgressReport > 5000) {
             System.err.println("Progress: " + nodesVisited + " nodes visited. Current path: " + currentPath);
             lastProgressReport = now;
         }
