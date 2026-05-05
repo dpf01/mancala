@@ -52,6 +52,8 @@ The future of the game search capabilities is outlined in [SEARCH_EVOLUTION.md](
 - [x] **Introduce Iterative Deepening:** Provides immediate results at increasing depths, improving the user experience and search efficiency.
 - [x] **Heuristic Evaluation:** Implemented a score-based evaluation for non-terminal leaf nodes.
 - [x] **Transposition Table (Memoization) Fixes:** Updated the cache to handle search depth and pruning state correctly.
+- [x] **Playback Mode:** Added `--play-string` flag to execute move sequences and verify board states.
+- [x] **Heuristic Fix:** Corrected extra-turn potential calculation to use modulo 13 (accounting for skipped opponent mancala).
 - [ ] **Principal Variation Reporting:** Planned.
 
 ## Implementation Details

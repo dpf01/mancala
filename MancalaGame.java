@@ -95,9 +95,60 @@ public class MancalaGame {
             }
             GameSearcher searcher = new GameSearcher(depth);
             searcher.run();
+        } else if (args.length > 1 && args[0].equals("--play-string")) {
+            playString(args[1]);
         } else {
             MancalaGame game = new MancalaGame();
             game.start();
         }
+    }
+
+    private static void playString(String moveSequence) {
+        Board board = new Board();
+        int currentPlayerIndex = 1;
+        System.out.println("Playing sequence: " + moveSequence);
+
+        for (int i = 0; i < moveSequence.length(); i++) {
+            char moveChar = moveSequence.charAt(i);
+            int move;
+            int playerOfMove;
+
+            if (Character.isUpperCase(moveChar)) {
+                move = moveChar - 'A';
+                playerOfMove = 1;
+            } else {
+                move = (moveChar - 'a') + 7;
+                playerOfMove = 2;
+            }
+
+            if (playerOfMove != currentPlayerIndex) {
+                System.out.println("\nINVALID MOVE at index " + i + ": '" + moveChar + "' is for Player " + playerOfMove + ", but it is Player " + currentPlayerIndex + "'s turn.");
+                board.display();
+                return;
+            }
+
+            if (board.getPits(move) == 0) {
+                System.out.println("\nINVALID MOVE at index " + i + ": Pit " + moveChar + " is empty.");
+                board.display();
+                return;
+            }
+
+            boolean extraTurn = board.move(move, currentPlayerIndex);
+            if (!extraTurn) {
+                currentPlayerIndex = (currentPlayerIndex == 1) ? 2 : 1;
+            }
+
+            if (board.isGameOver()) {
+                System.out.println("\nGame over during sequence at move " + (i + 1) + ".");
+                break;
+            }
+        }
+
+        System.out.println("\nFinal Board State after sequence:");
+        if (board.isGameOver()) {
+            board.collectRemaining();
+        }
+        board.display();
+        System.out.println("Scores - P1: " + board.getPlayer1Score() + ", P2: " + board.getPlayer2Score());
     }
 }

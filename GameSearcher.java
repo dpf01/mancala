@@ -101,14 +101,16 @@ public class GameSearcher {
         for (int i = 7; i < 13; i++) score -= board.getPits(i) * pitWeight;
 
         // Bonus for potential extra turns (last stone landing in mancala)
-        // This is a very simple lookahead: can we land in mancala in ONE move?
         for (int i = 0; i < 6; i++) {
-            if (board.getPits(i) > 0 && (i + board.getPits(i)) % 14 == 6) {
+            int stones = board.getPits(i);
+            if (stones > 0 && (i + stones) % 13 == 6) {
                 score += extraTurnPotentialWeight;
             }
         }
         for (int i = 7; i < 13; i++) {
-            if (board.getPits(i) > 0 && (i + board.getPits(i)) % 14 == 13) {
+            int stones = board.getPits(i);
+            // For P2, mancala is index 13, which is 0 mod 13.
+            if (stones > 0 && (i + stones) % 13 == 0) {
                 score -= extraTurnPotentialWeight;
             }
         }

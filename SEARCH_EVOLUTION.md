@@ -59,9 +59,15 @@ Your idea of identifying "inevitable win/loss" states higher in the tree is exce
 3.  **Enhance Output:**
     - Show the **Principal Variation** (the expected line of play).
     - Report the **Value** (score difference) rather than just W/L/T when possible.
-4.  **Implement Heuristic Search:** For depths where exhaustive search isn't possible, use a simple evaluation function:
-    - `(Player1Score - Player2Score) + (StonesOnPlayer1Side - StonesOnPlayer2Side) + (PotentialExtraTurns * Weight)`
+4.  **Heuristic Accuracy:** Ensure lookahead heuristics (like extra-turn potential) correctly account for board rules, such as skipping the opponent's mancala (modulo 13).
 5.  **Benchmarking:** Measure nodes per second (NPS) to track performance improvements.
+
+## 7. Evolution History
+- **Alpha-Beta Pruning:** Drastically reduced search space.
+- **Iterative Deepening:** Added real-time feedback at increasing depths.
+- **Granular Scoring:** Replaced 3-state enum with integer scores for tactical awareness.
+- **Playback Mode:** Enabled verification of Principal Variations via move-string execution.
+- **Heuristic Refinement:** Corrected extra-turn logic and added stone weighting.
 
 ---
 *Note: This critique is based on the state of the code as of May 2026.*
