@@ -29,6 +29,24 @@ An array of integers of size 14:
 - Index 7-12: Player 2 (Computer) holes.
 - Index 13: Player 2 (Computer) mancala.
 
-### Game Logic
-- The `Board` class will have a `move(int holeIndex, int playerIndex)` method that returns whether the player gets another turn.
-- Capturing logic and game-over detection will also reside in `Board` or be orchestrated by `MancalaGame`.
+### Exhaustive Search Mode (New)
+- Goal: Explore all possible game states using Depth-First Search (DFS).
+- Player 1 (User side) always goes first.
+- Move Representation:
+  - Player 1: Uppercase 'A' through 'F'.
+  - Player 2: Lowercase 'a' through 'f'.
+- Pruning/Stopping Conditions:
+  - If a player's mancala contains more than 24 stones (majority of 48).
+  - If a game state has already been visited (memoization using a Map).
+- Output: Move sequences for completed games and the outcome.
+- State Annotation: Identify nodes where a player can force a win.
+
+## Implementation Details
+
+### Board State
+A board state can be represented as a record or a string to facilitate memoization.
+
+### Search Logic
+- A recursive DFS function will explore all valid moves for the current player.
+- It will track the move sequence.
+- It will store the results of each state (Win/Loss/Draw) to determine if a player can force a win.

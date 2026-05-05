@@ -82,7 +82,12 @@ public class MancalaGame {
     }
 
     public static void main(String[] args) {
-        MancalaGame game = new MancalaGame();
-        game.start();
+        if (args.length > 0 && args[0].equals("--search")) {
+            GameSearcher searcher = new GameSearcher();
+            searcher.run();
+        } else {
+            MancalaGame game = new MancalaGame();
+            game.start();
+        }
     }
 }

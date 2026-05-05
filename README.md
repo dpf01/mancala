@@ -12,11 +12,21 @@ javac *.java
 
 ## How to Run
 
-To start the game, run:
+To start the game in interactive mode, run:
 
 ```bash
 java MancalaGame
 ```
+
+To run the exhaustive search mode, run:
+
+```bash
+java MancalaGame --search
+```
+
+## Game Modes
+- **Interactive Mode**: Play against the computer (Random strategy).
+- **Search Mode**: Exhaustively explores all possible games and identifies winning strategies.
 
 ## Game Rules
 - The game is played between a User and a Computer.

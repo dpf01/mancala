@@ -13,6 +13,18 @@ public class Board {
         reset();
     }
 
+    public Board(int[] pits) {
+        this.pits = Arrays.copyOf(pits, TOTAL_PITS);
+    }
+
+    public int[] getPitsArray() {
+        return Arrays.copyOf(pits, TOTAL_PITS);
+    }
+
+    public String getStateKey() {
+        return Arrays.toString(pits);
+    }
+
     public void reset() {
         for (int i = 0; i < TOTAL_PITS; i++) {
             if (i == PLAYER1_MANCALA || i == PLAYER2_MANCALA) {
