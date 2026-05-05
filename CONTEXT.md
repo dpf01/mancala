@@ -44,6 +44,15 @@ An array of integers of size 14:
 - State Annotation: Minimax algorithm identifies nodes where a player can force a win (`P1_CAN_FORCE_WIN`, `P2_CAN_FORCE_WIN`, `CAN_FORCE_TIE`).
 - Progress: Periodically reports nodes visited and current path to `stderr`.
 
+## Search Evolution Roadmap
+The future of the game search capabilities is outlined in [SEARCH_EVOLUTION.md](SEARCH_EVOLUTION.md). 
+
+### Progress
+- [x] **Implement Alpha-Beta Pruning:** Optimized the minimax search by pruning branches that cannot influence the final decision. This significantly reduces the number of nodes visited.
+- [ ] **Introduce Iterative Deepening:** Planned.
+- [ ] **Heuristic Evaluation:** Planned.
+- [ ] **Principal Variation Reporting:** Planned.
+
 ## Implementation Details
 
 ### Board State

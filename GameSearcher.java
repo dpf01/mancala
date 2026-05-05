@@ -65,11 +65,13 @@ public class GameSearcher {
 
     public void run() {
         Board board = new Board();
-        dfs(board, 1, new StringBuilder());
+        // Alpha-Beta: P1 (Maximizer) wants P1_WINS, P2 (Minimizer) wants P2_WINS.
+        // Initial Alpha = P2_WINS (worst for P1), Initial Beta = P1_WINS (worst for P2).
+        dfs(board, 1, new StringBuilder(), GameResult.P2_WINS, GameResult.P1_WINS);
         System.out.println("Search complete. Total nodes visited: " + nodesVisited);
     }
 
-    private GameResult dfs(Board board, int playerIndex, StringBuilder moveSequence) {
+    private GameResult dfs(Board board, int playerIndex, StringBuilder moveSequence, GameResult alpha, GameResult beta) {
         nodesVisited++;
         if (nodesVisited % 1000000 == 0) {
             reportProgress(moveSequence.toString());
@@ -146,23 +148,32 @@ public class GameSearcher {
             int currentLen = moveSequence.length();
             moveSequence.append(moveChar);
             
-            GameResult result = dfs(board, nextPlayer, moveSequence);
+            GameResult result = dfs(board, nextPlayer, moveSequence, alpha, beta);
             
             moveSequence.setLength(currentLen); // Backtrack string
             board.copyPitsFrom(savedPits); // Backtrack board
 
-            if (bestResult == null) {
-                bestResult = result;
-            } else {
-                if (playerIndex == 1) {
-                    if (result == GameResult.P1_WINS || (result == GameResult.TIE && bestResult == GameResult.P2_WINS)) {
-                        bestResult = result;
-                    }
-                } else {
-                    if (result == GameResult.P2_WINS || (result == GameResult.TIE && bestResult == GameResult.P1_WINS)) {
-                        bestResult = result;
-                    }
+            if (playerIndex == 1) {
+                if (bestResult == null || result.ordinal() < bestResult.ordinal()) {
+                    bestResult = result;
                 }
+                // Update alpha (best for P1)
+                if (bestResult.ordinal() < alpha.ordinal()) {
+                    alpha = bestResult;
+                }
+            } else {
+                if (bestResult == null || result.ordinal() > bestResult.ordinal()) {
+                    bestResult = result;
+                }
+                // Update beta (best for P2)
+                if (bestResult.ordinal() > beta.ordinal()) {
+                    beta = bestResult;
+                }
+            }
+
+            // Alpha-Beta Pruning
+            if (beta.ordinal() <= alpha.ordinal()) {
+                break;
             }
         }
 
