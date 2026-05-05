@@ -81,29 +81,61 @@ public class MancalaGame {
         }
     }
 
+    private static class PlaybackResult {
+        Board board;
+        int nextPlayerIndex;
+        boolean success;
+
+        PlaybackResult(Board board, int nextPlayerIndex, boolean success) {
+            this.board = board;
+            this.nextPlayerIndex = nextPlayerIndex;
+            this.success = success;
+        }
+    }
+
     public static void main(String[] args) {
-        if (args.length > 0 && args[0].equals("--search")) {
-            int depth = -1;
-            for (int i = 1; i < args.length; i++) {
-                if (args[i].equals("--depth") && i + 1 < args.length) {
-                    try {
-                        depth = Integer.parseInt(args[i + 1]);
-                    } catch (NumberFormatException e) {
-                        System.err.println("Invalid depth value. Using default.");
-                    }
+        boolean searchMode = false;
+        String playString = null;
+        int depth = -1;
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("--search")) {
+                searchMode = true;
+            } else if (args[i].equals("--play-string") && i + 1 < args.length) {
+                playString = args[i + 1];
+                i++;
+            } else if (args[i].equals("--depth") && i + 1 < args.length) {
+                try {
+                    depth = Integer.parseInt(args[i + 1]);
+                } catch (NumberFormatException e) {
+                    System.err.println("Invalid depth value.");
                 }
+                i++;
             }
+        }
+
+        if (searchMode) {
+            Board startBoard = new Board();
+            int startPlayer = 1;
+
+            if (playString != null) {
+                PlaybackResult pr = playString(playString);
+                if (!pr.success) return;
+                startBoard = pr.board;
+                startPlayer = pr.nextPlayerIndex;
+            }
+
             GameSearcher searcher = new GameSearcher(depth);
-            searcher.run();
-        } else if (args.length > 1 && args[0].equals("--play-string")) {
-            playString(args[1]);
+            searcher.run(startBoard, startPlayer);
+        } else if (playString != null) {
+            playString(playString);
         } else {
             MancalaGame game = new MancalaGame();
             game.start();
         }
     }
 
-    private static void playString(String moveSequence) {
+    private static PlaybackResult playString(String moveSequence) {
         Board board = new Board();
         int currentPlayerIndex = 1;
         System.out.println("Playing sequence: " + moveSequence);
@@ -124,13 +156,13 @@ public class MancalaGame {
             if (playerOfMove != currentPlayerIndex) {
                 System.out.println("\nINVALID MOVE at index " + i + ": '" + moveChar + "' is for Player " + playerOfMove + ", but it is Player " + currentPlayerIndex + "'s turn.");
                 board.display();
-                return;
+                return new PlaybackResult(board, currentPlayerIndex, false);
             }
 
             if (board.getPits(move) == 0) {
                 System.out.println("\nINVALID MOVE at index " + i + ": Pit " + moveChar + " is empty.");
                 board.display();
-                return;
+                return new PlaybackResult(board, currentPlayerIndex, false);
             }
 
             boolean extraTurn = board.move(move, currentPlayerIndex);
@@ -144,11 +176,13 @@ public class MancalaGame {
             }
         }
 
-        System.out.println("\nFinal Board State after sequence:");
+        System.out.println("\nBoard State after sequence:");
         if (board.isGameOver()) {
             board.collectRemaining();
         }
         board.display();
         System.out.println("Scores - P1: " + board.getPlayer1Score() + ", P2: " + board.getPlayer2Score());
+        
+        return new PlaybackResult(board, currentPlayerIndex, true);
     }
 }

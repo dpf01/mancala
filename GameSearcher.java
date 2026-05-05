@@ -69,15 +69,17 @@ public class GameSearcher {
         this.maxDepthLimit = maxDepthLimit;
     }
 
-    public void run() {
-        Board board = new Board();
+    public void run(Board initialBoard, int initialPlayerIndex) {
         int endDepth = (maxDepthLimit == -1) ? 50 : maxDepthLimit;
 
         System.out.println("Starting Granular Iterative Deepening Search...");
+        initialBoard.display();
+        System.out.println("Initial Player: P" + initialPlayerIndex);
+
         for (int d = 1; d <= endDepth; d++) {
             nodesVisited = 0;
             long start = System.currentTimeMillis();
-            Result res = dfs(board, 1, d, Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);
+            Result res = dfs(initialBoard, initialPlayerIndex, d, Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);
             long end = System.currentTimeMillis();
             
             System.out.printf("D%2d: Score: %5d | PV: %-25s | Nodes: %-8d | %dms\n", 
