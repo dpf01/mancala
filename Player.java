@@ -15,6 +15,8 @@ public abstract class Player {
 
     public void reset() {}
 
+    public void setFirstMove(boolean firstMove) {}
+
     public String getName() {
         return name;
     }

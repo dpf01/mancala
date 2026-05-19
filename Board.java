@@ -26,6 +26,16 @@ public class Board {
         return moveHistory.toString();
     }
 
+    public void recordMove(int holeIndex, int playerIndex) {
+        char moveChar;
+        if (playerIndex == 1) {
+            moveChar = (char) ('A' + holeIndex);
+        } else {
+            moveChar = (char) ('a' + (holeIndex - 7));
+        }
+        moveHistory.append(moveChar);
+    }
+
     public void copyPitsTo(int[] dest) {
         System.arraycopy(pits, 0, dest, 0, TOTAL_PITS);
     }
@@ -60,14 +70,6 @@ public class Board {
      * @return true if the player gets an extra turn.
      */
     public boolean move(int holeIndex, int playerIndex) {
-        char moveChar;
-        if (playerIndex == 1) {
-            moveChar = (char) ('A' + holeIndex);
-        } else {
-            moveChar = (char) ('a' + (holeIndex - 7));
-        }
-        moveHistory.append(moveChar);
-
         int stones = pits[holeIndex];
         pits[holeIndex] = 0;
 

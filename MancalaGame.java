@@ -24,6 +24,7 @@ public class MancalaGame {
         if (initialBoard != null) {
             this.board = initialBoard;
             this.currentPlayer = (nextPlayerIndex == 1) ? human : computer;
+            computer.setFirstMove(false);
         }
         System.out.println("Welcome to Mancala!");
         boolean playAgain = true;
@@ -66,7 +67,7 @@ public class MancalaGame {
                 }
 
                 int move = currentPlayer.getMove(board);
-
+                board.recordMove(move, currentPlayer.getPlayerIndex());
                 extraTurn = board.move(move, currentPlayer.getPlayerIndex());
 
                 if (extraTurn && !board.isGameOver()) {
@@ -191,6 +192,7 @@ public class MancalaGame {
                 return new PlaybackResult(board, currentPlayerIndex, false);
             }
 
+            board.recordMove(move, currentPlayerIndex);
             boolean extraTurn = board.move(move, currentPlayerIndex);
             if (!extraTurn) {
                 currentPlayerIndex = (currentPlayerIndex == 1) ? 2 : 1;

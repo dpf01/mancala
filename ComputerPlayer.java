@@ -23,6 +23,11 @@ public class ComputerPlayer extends Player {
     }
 
     @Override
+    public void setFirstMove(boolean firstMove) {
+        this.isFirstMoveOfGame = firstMove;
+    }
+
+    @Override
     public void startThinking(Board board, int currentPlayerIndex) {
         if (searchThread != null && searchThread.isAlive()) {
             stopThinking();
