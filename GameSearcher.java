@@ -59,6 +59,14 @@ public class GameSearcher {
             long combined = low ^ high;
             return (int) (combined ^ (combined >>> 32));
         }
+
+        int getP1Mancala() {
+            return (int) ((low >>> 36) & 0x3F);
+        }
+
+        int getP2Mancala() {
+            return (int) ((high >>> 18) & 0x3F);
+        }
     }
 
     private static final int MAX_CACHE_SIZE = 500000;
@@ -68,6 +76,8 @@ public class GameSearcher {
     private long lastProgressReport = System.currentTimeMillis();
     private volatile boolean stopped = false;
     private volatile int bestMoveSoFar = -1;
+    private volatile int rootP1Mancala = 0;
+    private volatile int rootP2Mancala = 0;
 
     public GameSearcher(int maxDepthLimit) {
         this.maxDepthLimit = maxDepthLimit;
@@ -88,6 +98,8 @@ public class GameSearcher {
     public void run(Board initialBoard, int initialPlayerIndex, boolean verbose) {
         stopped = false;
         bestMoveSoFar = -1;
+        this.rootP1Mancala = initialBoard.getPlayer1Score();
+        this.rootP2Mancala = initialBoard.getPlayer2Score();
         int endDepth = (maxDepthLimit == -1) ? 50 : maxDepthLimit;
 
         if (verbose) {
@@ -145,6 +157,8 @@ public class GameSearcher {
 
     public int getBestMove(Board board, int playerIndex, int depth) {
         stopped = false;
+        this.rootP1Mancala = board.getPlayer1Score();
+        this.rootP2Mancala = board.getPlayer2Score();
         Result res = dfs(board, playerIndex, depth, Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);
         return res.bestMove;
     }
@@ -246,8 +260,21 @@ public class GameSearcher {
 
     private void pruneCache() {
         int targetSize = (int) (MAX_CACHE_SIZE * 0.75);
+
+        // Phase 1: Remove "the past" (unreachable states)
+        Iterator<Map.Entry<BoardState, SearchEntry>> it = memo.entrySet().iterator();
+        while (it.hasNext() && memo.size() > targetSize) {
+            BoardState state = it.next().getKey();
+            if (state.getP1Mancala() < rootP1Mancala || state.getP2Mancala() < rootP2Mancala) {
+                it.remove();
+            }
+        }
+
+        if (memo.size() <= targetSize) return;
+
+        // Phase 2: Depth-based pruning
         for (int d = 0; d <= 4; d++) {
-            Iterator<Map.Entry<BoardState, SearchEntry>> it = memo.entrySet().iterator();
+            it = memo.entrySet().iterator();
             while (it.hasNext() && memo.size() > targetSize) {
                 if (it.next().getValue().depth <= d) {
                     it.remove();
@@ -255,7 +282,9 @@ public class GameSearcher {
             }
             if (memo.size() <= targetSize) return;
         }
-        Iterator<BoardState> it = memo.keySet().iterator();
+
+        // Phase 3: Fallback arbitrary pruning
+        it = memo.entrySet().iterator();
         while (it.hasNext() && memo.size() > targetSize) {
             it.next();
             it.remove();
