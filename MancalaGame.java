@@ -20,37 +20,42 @@ public class MancalaGame {
         this.player1StartsNext = random.nextBoolean();
     }
 
-    public void start() {
+    public void start(Board initialBoard, int nextPlayerIndex) {
+        if (initialBoard != null) {
+            this.board = initialBoard;
+            this.currentPlayer = (nextPlayerIndex == 1) ? human : computer;
+        }
         System.out.println("Welcome to Mancala!");
         boolean playAgain = true;
 
         while (playAgain) {
-            human.reset();
-            computer.reset();
+            if (this.board.getPlayString().isEmpty()) {
+                human.reset();
+                computer.reset();
+            }
             playGame();
             System.out.print("Do you want to play again? (y/n): ");
             String choice = scanner.nextLine().trim().toLowerCase();
             playAgain = choice.startsWith("y");
             if (playAgain) {
                 board.reset();
-                // Alternate who starts next game
-                // (Note: player1StartsNext was set for the game just finished, 
-                // but we'll just toggle it here)
-                // Actually, the requirement says "On subsequent games, alternate which player goes first."
+                human.reset();
+                computer.reset();
             }
         }
         System.out.println("Thanks for playing!");
     }
 
     private void playGame() {
-        if (player1StartsNext) {
-            currentPlayer = human;
-        } else {
-            currentPlayer = computer;
+        if (board.getPlayString().isEmpty()) {
+            if (player1StartsNext) {
+                currentPlayer = human;
+            } else {
+                currentPlayer = computer;
+            }
+            player1StartsNext = !player1StartsNext; // Prepare for next game
+            System.out.println(currentPlayer.getName() + " starts the game.");
         }
-        player1StartsNext = !player1StartsNext; // Prepare for next game
-
-        System.out.println(currentPlayer.getName() + " starts the game.");
 
         while (!board.isGameOver()) {
             board.display();
@@ -71,6 +76,8 @@ public class MancalaGame {
 
                 if (currentPlayer == human) {
                     computer.stopThinking();
+                } else {
+                    System.out.println("Play-string: " + board.getPlayString());
                 }
             }
             
@@ -107,14 +114,14 @@ public class MancalaGame {
 
     public static void main(String[] args) {
         boolean searchMode = false;
-        String playString = null;
+        String playStringArg = null;
         int depth = -1;
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--search")) {
                 searchMode = true;
             } else if (args[i].equals("--play-string") && i + 1 < args.length) {
-                playString = args[i + 1];
+                playStringArg = args[i + 1];
                 i++;
             } else if (args[i].equals("--depth") && i + 1 < args.length) {
                 try {
@@ -130,8 +137,8 @@ public class MancalaGame {
             Board startBoard = new Board();
             int startPlayer = 1;
 
-            if (playString != null) {
-                PlaybackResult pr = playString(playString);
+            if (playStringArg != null) {
+                PlaybackResult pr = playString(playStringArg);
                 if (!pr.success) return;
                 startBoard = pr.board;
                 startPlayer = pr.nextPlayerIndex;
@@ -139,17 +146,24 @@ public class MancalaGame {
 
             GameSearcher searcher = new GameSearcher(depth);
             searcher.run(startBoard, startPlayer, true);
-        } else if (playString != null) {
-            playString(playString);
+        } else if (playStringArg != null) {
+            PlaybackResult pr = playString(playStringArg);
+            if (!pr.success) return;
+            MancalaGame game = new MancalaGame();
+            game.start(pr.board, pr.nextPlayerIndex);
         } else {
             MancalaGame game = new MancalaGame();
-            game.start();
+            game.start(null, -1);
         }
     }
 
     private static PlaybackResult playString(String moveSequence) {
         Board board = new Board();
-        int currentPlayerIndex = 1;
+        if (moveSequence == null || moveSequence.isEmpty()) {
+            return new PlaybackResult(board, 1, true);
+        }
+        
+        int currentPlayerIndex = Character.isUpperCase(moveSequence.charAt(0)) ? 1 : 2;
         System.out.println("Playing sequence: " + moveSequence);
 
         for (int i = 0; i < moveSequence.length(); i++) {

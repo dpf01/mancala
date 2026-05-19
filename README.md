@@ -18,21 +18,21 @@ To start the game in interactive mode, run:
 java MancalaGame
 ```
 
-To run the exhaustive search mode, run:
+To start the game from a specific state using a play-string:
 
 ```bash
-java MancalaGame --search
+java MancalaGame --play-string <sequence>
 ```
 
-To limit search output to a specific depth (number of moves) and see forced win/tie outcomes, run:
+To run search on a specific board state after a move sequence:
 
 ```bash
-java MancalaGame --search --depth <n>
+java MancalaGame --search --play-string <sequence>
 ```
 
 ## Game Modes
-- **Interactive Mode**: Play against the computer. The computer uses an advanced search strategy that thinks while you are making your move and responds quickly with its best move.
-- **Search Mode**: Exhaustively explores all possible games using minimax and identifies forced winning strategies. Supports depth-limited output and reports progress.
+- **Interactive Mode**: Play against the computer. The computer uses an advanced search strategy that thinks while you are making your move and responds quickly with its best move. Supports resuming from a play-string.
+- **Search Mode**: Exhaustively explores all possible games using minimax and identifies forced winning strategies. Supports depth-limited output, move sequence analysis via play-strings, and reports progress.
 
 ## Game Rules
 - The game is played between a User and a Computer.

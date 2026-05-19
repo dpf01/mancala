@@ -7,6 +7,7 @@ public class Board {
     public static final int PLAYER2_MANCALA = 13;
 
     private int[] pits;
+    private StringBuilder moveHistory = new StringBuilder();
 
     public Board() {
         pits = new int[TOTAL_PITS];
@@ -15,6 +16,14 @@ public class Board {
 
     public Board(int[] pits) {
         this.pits = Arrays.copyOf(pits, TOTAL_PITS);
+    }
+
+    public void setMoveHistory(String history) {
+        this.moveHistory = new StringBuilder(history);
+    }
+
+    public String getPlayString() {
+        return moveHistory.toString();
     }
 
     public void copyPitsTo(int[] dest) {
@@ -30,6 +39,7 @@ public class Board {
     }
 
     public void reset() {
+        moveHistory = new StringBuilder();
         for (int i = 0; i < TOTAL_PITS; i++) {
             if (i == PLAYER1_MANCALA || i == PLAYER2_MANCALA) {
                 pits[i] = 0;
@@ -50,6 +60,14 @@ public class Board {
      * @return true if the player gets an extra turn.
      */
     public boolean move(int holeIndex, int playerIndex) {
+        char moveChar;
+        if (playerIndex == 1) {
+            moveChar = (char) ('A' + holeIndex);
+        } else {
+            moveChar = (char) ('a' + (holeIndex - 7));
+        }
+        moveHistory.append(moveChar);
+
         int stones = pits[holeIndex];
         pits[holeIndex] = 0;
 

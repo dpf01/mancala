@@ -14,9 +14,13 @@
   - Asynchronous tree search (thinks during human turn).
   - Rapid response using cache lookups and shallow search fallback.
   - Random first move if starting the game.
-- Session Management:
-  - Alternate who goes first in subsequent games.
-  - Player state reset between games.
+- Play-String Tracking:
+  - Game state can be represented as a string of moves (A-F for P1, a-f for P2).
+  - The computer outputs the current play-string after each of its turns.
+  - The starting player is determined by the case of the first character in the play-string.
+- Resumption and Search:
+  - The game can be resumed from any valid play-string provided via CLI.
+  - Search mode can analyze the best next move starting from a specific play-string.
 
 ## Design & Structure
 
