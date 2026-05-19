@@ -174,6 +174,35 @@ public class GameSearcher {
         return null;
     }
 
+    public String getCacheSummary() {
+        if (memo.isEmpty()) return "Cache is empty.";
+        
+        Map<Integer, Integer> depthCounts = new TreeMap<>();
+        Map<Integer, Integer> moveCounts = new TreeMap<>();
+        int minScore = Integer.MAX_VALUE;
+        int maxScore = Integer.MIN_VALUE;
+        
+        for (SearchEntry entry : memo.values()) {
+            depthCounts.put(entry.depth, depthCounts.getOrDefault(entry.depth, 0) + 1);
+            int move = entry.result.bestMove;
+            moveCounts.put(move, moveCounts.getOrDefault(move, 0) + 1);
+            minScore = Math.min(minScore, entry.result.score);
+            maxScore = Math.max(maxScore, entry.result.score);
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("Cache Summary (Size: ").append(memo.size()).append(")\n");
+        sb.append("    Depth Dist: ").append(depthCounts).append("\n");
+        sb.append("    Move Dist: ");
+        for (Map.Entry<Integer, Integer> me : moveCounts.entrySet()) {
+            int move = me.getKey();
+            String label = (move == -1) ? "None" : (move < 7 ? ""+(char)('A'+move) : ""+(char)('a'+(move-7)));
+            sb.append(label).append(":").append(me.getValue()).append(" ");
+        }
+        sb.append("\n    Score Range: [").append(minScore).append(", ").append(maxScore).append("]");
+        return sb.toString();
+    }
+
     private int evaluate(Board board) {
         int p1Score = board.getPlayer1Score();
         int p2Score = board.getPlayer2Score();

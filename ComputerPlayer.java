@@ -68,11 +68,13 @@ public class ComputerPlayer extends Player {
             // Cache lookup with debug info
             GameSearcher.RawEntry entry = searcher.getRawEntryFromCache(board, playerIndex);
             if (entry == null) {
-                System.out.println("DEBUG: Cache MISS for state " + board.getStateKey() + " P" + playerIndex + " (Size: " + searcher.getCacheSize() + ")");
+                System.out.println("DEBUG: Cache MISS for state " + board.getStateKey() + " P" + playerIndex);
+                System.out.println(searcher.getCacheSummary());
             } else {
                 move = entry.bestMove;
                 if (move == -1) {
                     System.out.println("DEBUG: Cache HIT but bestMove is -1 for state " + board.getStateKey() + " P" + playerIndex + " (Score: " + entry.score + ", Depth: " + entry.depth + ")");
+                    System.out.println(searcher.getCacheSummary());
                 }
             }
 
