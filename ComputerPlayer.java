@@ -66,14 +66,14 @@ public class ComputerPlayer extends Player {
             stopThinking();
 
             // Cache lookup with debug info
-            GameSearcher.RawEntry entry = searcher.getRawEntryFromCache(board, playerIndex);
-            if (entry == null) {
+            GameSearcher.SearchResult res = searcher.getResultFromCache(board, playerIndex);
+            if (res == null) {
                 System.out.println("DEBUG: Cache MISS for state " + board.getStateKey() + " P" + playerIndex);
                 System.out.println(searcher.getCacheSummary());
             } else {
-                move = entry.bestMove;
+                move = res.bestMove;
                 if (move == -1) {
-                    System.out.println("DEBUG: Cache HIT but bestMove is -1 for state " + board.getStateKey() + " P" + playerIndex + " (Score: " + entry.score + ", Depth: " + entry.depth + ")");
+                    System.out.println("DEBUG: Cache HIT but bestMove is -1 for state " + board.getStateKey() + " P" + playerIndex + " (Score: " + res.score + ", Depth: " + res.depth + ")");
                     System.out.println(searcher.getCacheSummary());
                 }
             }
