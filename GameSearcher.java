@@ -61,7 +61,7 @@ public class GameSearcher {
         }
     }
 
-    private static final int MAX_CACHE_SIZE = 200000;
+    private static final int MAX_CACHE_SIZE = 500000;
     private final Map<BoardState, SearchEntry> memo = new ConcurrentHashMap<>();
     private int maxDepthLimit = -1;
     private long nodesVisited = 0;
@@ -239,9 +239,27 @@ public class GameSearcher {
     private void cacheResult(BoardState stateKey, Result result, int depth) {
         if (stopped) return;
         if (memo.size() >= MAX_CACHE_SIZE) {
-            memo.clear();
+            pruneCache();
         }
         memo.put(stateKey, new SearchEntry(result, depth));
+    }
+
+    private void pruneCache() {
+        int targetSize = (int) (MAX_CACHE_SIZE * 0.75);
+        for (int d = 0; d <= 4; d++) {
+            Iterator<Map.Entry<BoardState, SearchEntry>> it = memo.entrySet().iterator();
+            while (it.hasNext() && memo.size() > targetSize) {
+                if (it.next().getValue().depth <= d) {
+                    it.remove();
+                }
+            }
+            if (memo.size() <= targetSize) return;
+        }
+        Iterator<BoardState> it = memo.keySet().iterator();
+        while (it.hasNext() && memo.size() > targetSize) {
+            it.next();
+            it.remove();
+        }
     }
 
     public Result dfs(Board board, int playerIndex, int remainingDepth, int alpha, int beta) {
