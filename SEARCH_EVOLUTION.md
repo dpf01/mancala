@@ -68,6 +68,8 @@ Your idea of identifying "inevitable win/loss" states higher in the tree is exce
 - **Granular Scoring:** Replaced 3-state enum with integer scores for tactical awareness.
 - **Playback Mode:** Enabled verification of Principal Variations via move-string execution.
 - **Heuristic Refinement:** Corrected extra-turn logic and added stone weighting.
+- **Memory Optimization:** Replaced full PV string storage in transposition table with single `bestMove` integer to eliminate `OutOfMemoryError` and reduce GC pressure. Added PV reconstruction for display.
+- **Cache-Only Lookups:** Enabled fast responses by using existing transposition table entries without further tree expansion during the computer's turn.
 
 ---
 *Note: This critique is based on the state of the code as of May 2026.*

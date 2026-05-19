@@ -6,11 +6,11 @@ public class GameSearcher {
 
     public static class Result {
         public int score;
-        public String pv;
+        public int bestMove; // Store the best move index
 
-        public Result(int score, String pv) {
+        public Result(int score, int bestMove) {
             this.score = score;
-            this.pv = pv;
+            this.bestMove = bestMove;
         }
     }
 
@@ -94,32 +94,60 @@ public class GameSearcher {
             Result res = dfs(initialBoard, initialPlayerIndex, d, Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);
             long end = System.currentTimeMillis();
             
-            if (!stopped && res.pv.length() > 0) {
-                char moveChar = res.pv.charAt(0);
-                if (initialPlayerIndex == 1) {
-                    bestMoveSoFar = moveChar - 'A';
-                } else {
-                    bestMoveSoFar = (moveChar - 'a') + 7;
-                }
+            if (!stopped && res.bestMove != -1) {
+                bestMoveSoFar = res.bestMove;
                 
                 if (verbose) {
+                    String pv = reconstructPV(initialBoard, initialPlayerIndex, d);
                     System.out.printf("D%2d: Score: %5d | PV: %-25s | Nodes: %-8d | %dms\n", 
-                        d, res.score, res.pv, nodesVisited, (end - start));
+                        d, res.score, pv, nodesVisited, (end - start));
                 }
             }
         }
     }
 
+    private String reconstructPV(Board board, int playerIndex, int depth) {
+        StringBuilder pv = new StringBuilder();
+        int[] savedPits = new int[Board.TOTAL_PITS];
+        board.copyPitsTo(savedPits);
+        
+        int currentPlayer = playerIndex;
+        for (int i = 0; i < depth; i++) {
+            BoardState stateKey = new BoardState(board, currentPlayer);
+            SearchEntry entry = memo.get(stateKey);
+            if (entry == null || entry.result.bestMove == -1) break;
+            
+            int move = entry.result.bestMove;
+            char moveChar;
+            if (currentPlayer == 1) {
+                moveChar = (char) ('A' + move);
+            } else {
+                moveChar = (char) ('a' + (move - 7));
+            }
+            pv.append(moveChar);
+            
+            boolean extraTurn = board.move(move, currentPlayer);
+            if (!extraTurn) {
+                currentPlayer = (currentPlayer == 1) ? 2 : 1;
+            }
+            if (board.isGameOver()) break;
+        }
+        
+        board.copyPitsFrom(savedPits);
+        return pv.toString();
+    }
+
     public int getBestMove(Board board, int playerIndex, int depth) {
         stopped = false;
         Result res = dfs(board, playerIndex, depth, Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);
-        if (res.pv.length() > 0) {
-            char moveChar = res.pv.charAt(0);
-            if (playerIndex == 1) {
-                return moveChar - 'A';
-            } else {
-                return (moveChar - 'a') + 7;
-            }
+        return res.bestMove;
+    }
+
+    public int getBestMoveFromCache(Board board, int playerIndex) {
+        BoardState stateKey = new BoardState(board, playerIndex);
+        SearchEntry entry = memo.get(stateKey);
+        if (entry != null) {
+            return entry.result.bestMove;
         }
         return -1;
     }
@@ -167,8 +195,8 @@ public class GameSearcher {
         }
 
         // Terminal states
-        if (board.getPlayer1Score() > 24) return new Result(WIN_SCORE + board.getPlayer1Score(), "");
-        if (board.getPlayer2Score() > 24) return new Result(LOSS_SCORE - board.getPlayer2Score(), "");
+        if (board.getPlayer1Score() > 24) return new Result(WIN_SCORE + board.getPlayer1Score(), -1);
+        if (board.getPlayer2Score() > 24) return new Result(LOSS_SCORE - board.getPlayer2Score(), -1);
 
         if (board.isGameOver()) {
             int[] currentPits = new int[Board.TOTAL_PITS];
@@ -177,17 +205,17 @@ public class GameSearcher {
             finalBoard.collectRemaining();
             
             if (finalBoard.getPlayer1Score() > finalBoard.getPlayer2Score()) {
-                return new Result(WIN_SCORE + finalBoard.getPlayer1Score(), "");
+                return new Result(WIN_SCORE + finalBoard.getPlayer1Score(), -1);
             } else if (finalBoard.getPlayer2Score() > finalBoard.getPlayer1Score()) {
-                return new Result(LOSS_SCORE - finalBoard.getPlayer2Score(), "");
+                return new Result(LOSS_SCORE - finalBoard.getPlayer2Score(), -1);
             } else {
-                return new Result(0, "");
+                return new Result(0, -1);
             }
         }
 
         // Depth limit
         if (remainingDepth == 0) {
-            return new Result(evaluate(board), "");
+            return new Result(evaluate(board), -1);
         }
 
         List<Integer> validMoves = new ArrayList<>();
@@ -198,7 +226,7 @@ public class GameSearcher {
         }
 
         int bestScore = (playerIndex == 1) ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-        String bestPV = "";
+        int bestMove = -1;
         int[] savedPits = new int[Board.TOTAL_PITS];
         board.copyPitsTo(savedPits);
 
@@ -207,13 +235,6 @@ public class GameSearcher {
             if (stopped) break;
             boolean extraTurn = board.move(move, playerIndex);
             
-            char moveChar;
-            if (playerIndex == 1) {
-                moveChar = (char) ('A' + move);
-            } else {
-                moveChar = (char) ('a' + (move - 7));
-            }
-
             int nextPlayer = extraTurn ? playerIndex : (playerIndex == 1 ? 2 : 1);
             
             Result res = dfs(board, nextPlayer, remainingDepth - 1, alpha, beta);
@@ -223,14 +244,14 @@ public class GameSearcher {
                 // Maximizer: P1
                 if (res.score > bestScore) {
                     bestScore = res.score;
-                    bestPV = moveChar + res.pv;
+                    bestMove = move;
                 }
                 alpha = Math.max(alpha, bestScore);
             } else {
                 // Minimizer: P2
                 if (res.score < bestScore) {
                     bestScore = res.score;
-                    bestPV = moveChar + res.pv;
+                    bestMove = move;
                 }
                 beta = Math.min(beta, bestScore);
             }
@@ -241,7 +262,7 @@ public class GameSearcher {
             }
         }
 
-        Result finalResult = new Result(bestScore, bestPV);
+        Result finalResult = new Result(bestScore, bestMove);
         if (!pruned) {
             memo.put(stateKey, new SearchEntry(finalResult, remainingDepth));
         }

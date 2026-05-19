@@ -6,6 +6,7 @@ public class ComputerPlayer extends Player {
     private Random random;
     private GameSearcher searcher;
     private Thread searchThread;
+    private boolean isFirstMoveOfGame = true;
 
     public ComputerPlayer(String name, int playerIndex) {
         super(name, playerIndex);
@@ -14,7 +15,12 @@ public class ComputerPlayer extends Player {
     }
 
     @Override
-    public void startThinking(Board board) {
+    public void reset() {
+        this.isFirstMoveOfGame = true;
+    }
+
+    @Override
+    public void startThinking(Board board, int currentPlayerIndex) {
         if (searchThread != null && searchThread.isAlive()) {
             stopThinking();
         }
@@ -25,7 +31,7 @@ public class ComputerPlayer extends Player {
         Board boardCopy = new Board(pits);
         
         searchThread = new Thread(() -> {
-            searcher.run(boardCopy, playerIndex == 1 ? 1 : 2, false);
+            searcher.run(boardCopy, currentPlayerIndex, false);
         });
         searchThread.start();
     }
@@ -46,22 +52,26 @@ public class ComputerPlayer extends Player {
 
     @Override
     public int getMove(Board board) {
-        // If we were already thinking, give it a second to finish the current depth
+        if (isFirstMoveOfGame) {
+            isFirstMoveOfGame = false;
+            return getRandomMove(board);
+        }
+
+        // If we were already thinking, give it a moment to finish the current depth
         if (searchThread != null && searchThread.isAlive()) {
             try {
-                Thread.sleep(1000); // Wait up to a second for better results
+                Thread.sleep(500); // Wait briefly for current depth
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
             stopThinking();
         }
 
-        // Now do a quick search for the current state.
-        // Reusing the memo from the background search!
-        int move = searcher.getBestMove(board, playerIndex, 12); // Search to a decent depth
+        // Now do a cache-only lookup for the current state.
+        int move = searcher.getBestMoveFromCache(board, playerIndex);
         
         if (move == -1 || board.getPits(move) == 0) {
-            // Fallback to random if search didn't find a valid move
+            // Fallback to random if search didn't find a valid move in cache
             move = getRandomMove(board);
         }
 

@@ -25,6 +25,8 @@ public class MancalaGame {
         boolean playAgain = true;
 
         while (playAgain) {
+            human.reset();
+            computer.reset();
             playGame();
             System.out.print("Do you want to play again? (y/n): ");
             String choice = scanner.nextLine().trim().toLowerCase();
@@ -50,23 +52,15 @@ public class MancalaGame {
 
         System.out.println(currentPlayer.getName() + " starts the game.");
 
-        boolean isFirstMoveOfGame = true;
-
         while (!board.isGameOver()) {
             board.display();
             boolean extraTurn = true;
             while (extraTurn && !board.isGameOver()) {
                 if (currentPlayer == human) {
-                    computer.startThinking(board);
+                    computer.startThinking(board, currentPlayer.getPlayerIndex());
                 }
 
-                int move;
-                if (isFirstMoveOfGame && currentPlayer == computer) {
-                    move = ((ComputerPlayer) computer).getRandomMove(board);
-                } else {
-                    move = currentPlayer.getMove(board);
-                }
-                isFirstMoveOfGame = false;
+                int move = currentPlayer.getMove(board);
 
                 if (currentPlayer == human) {
                     computer.stopThinking();

@@ -9,9 +9,11 @@ public abstract class Player {
 
     public abstract int getMove(Board board);
 
-    public void startThinking(Board board) {}
+    public void startThinking(Board board, int currentPlayerIndex) {}
 
     public void stopThinking() {}
+
+    public void reset() {}
 
     public String getName() {
         return name;
