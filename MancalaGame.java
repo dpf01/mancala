@@ -62,11 +62,12 @@ public class MancalaGame {
 
                 int move = currentPlayer.getMove(board);
 
+                extraTurn = board.move(move, currentPlayer.getPlayerIndex());
+
                 if (currentPlayer == human) {
                     computer.stopThinking();
                 }
 
-                extraTurn = board.move(move, currentPlayer.getPlayerIndex());
                 if (extraTurn && !board.isGameOver()) {
                     board.display();
                     System.out.println(currentPlayer.getName() + " gets an extra turn!");

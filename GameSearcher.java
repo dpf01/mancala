@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GameSearcher {
     private static final int WIN_SCORE = 10000;
@@ -60,7 +61,8 @@ public class GameSearcher {
         }
     }
 
-    private Map<BoardState, SearchEntry> memo = new HashMap<>();
+    private static final int MAX_CACHE_SIZE = 500000;
+    private Map<BoardState, SearchEntry> memo = new ConcurrentHashMap<>();
     private int maxDepthLimit = -1;
     private long nodesVisited = 0;
     private long lastProgressReport = System.currentTimeMillis();
@@ -73,6 +75,10 @@ public class GameSearcher {
 
     public void stop() {
         this.stopped = true;
+    }
+
+    public void clearCache() {
+        memo.clear();
     }
 
     public int getBestMoveSoFar() {
@@ -264,6 +270,9 @@ public class GameSearcher {
 
         Result finalResult = new Result(bestScore, bestMove);
         if (!pruned) {
+            if (memo.size() >= MAX_CACHE_SIZE) {
+                memo.clear();
+            }
             memo.put(stateKey, new SearchEntry(finalResult, remainingDepth));
         }
 

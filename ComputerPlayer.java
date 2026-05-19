@@ -17,6 +17,9 @@ public class ComputerPlayer extends Player {
     @Override
     public void reset() {
         this.isFirstMoveOfGame = true;
+        if (searcher != null) {
+            searcher.clearCache();
+        }
     }
 
     @Override
@@ -43,7 +46,9 @@ public class ComputerPlayer extends Player {
         }
         if (searchThread != null) {
             try {
-                searchThread.join(100); // Wait a bit for it to stop
+                // Wait briefly for the thread to recognize the stop signal.
+                // This reduces delay in the interactive loop.
+                searchThread.join(20); 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -52,27 +57,21 @@ public class ComputerPlayer extends Player {
 
     @Override
     public int getMove(Board board) {
+        int move;
         if (isFirstMoveOfGame) {
             isFirstMoveOfGame = false;
-            return getRandomMove(board);
-        }
-
-        // If we were already thinking, give it a moment to finish the current depth
-        if (searchThread != null && searchThread.isAlive()) {
-            try {
-                Thread.sleep(500); // Wait briefly for current depth
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            stopThinking();
-        }
-
-        // Now do a cache-only lookup for the current state.
-        int move = searcher.getBestMoveFromCache(board, playerIndex);
-        
-        if (move == -1 || board.getPits(move) == 0) {
-            // Fallback to random if search didn't find a valid move in cache
             move = getRandomMove(board);
+        } else {
+            // Stop background thinking before move selection
+            stopThinking();
+
+            // Cache-only lookup
+            move = searcher.getBestMoveFromCache(board, playerIndex);
+            
+            if (move == -1 || board.getPits(move) == 0) {
+                // Fallback to random
+                move = getRandomMove(board);
+            }
         }
 
         char holeLabel = (char) ('A' + (move < 7 ? move : move - 7));
