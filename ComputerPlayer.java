@@ -69,7 +69,13 @@ public class ComputerPlayer extends Player {
             move = searcher.getBestMoveFromCache(board, playerIndex);
             
             if (move == -1 || board.getPits(move) == 0) {
-                // Fallback to random
+                // If cache miss or illegal move, do a very quick shallow search.
+                // This should be fast because many nodes are already in the cache.
+                move = searcher.getBestMove(board, playerIndex, 8);
+            }
+            
+            if (move == -1 || board.getPits(move) == 0) {
+                // Final fallback to random
                 move = getRandomMove(board);
             }
         }

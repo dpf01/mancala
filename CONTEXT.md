@@ -11,8 +11,8 @@
   - Capture if last piece lands in player's empty hole and opponent's adjacent hole is not empty.
   - Game ends when one side is empty.
 - Initial computer strategy: Random choice.
-- Enhanced computer strategy: Asynchronous tree search using minimax with alpha-beta pruning and iterative deepening. The computer searches while the human is thinking and uses cache-only lookups for quick responses. If the computer starts the game, its first move is random.
-- Cache Management: The searcher uses a thread-safe `ConcurrentHashMap` with a size limit to balance performance and memory usage.
+- Enhanced computer strategy: Asynchronous tree search using minimax with alpha-beta pruning and iterative deepening. The computer searches while the human is thinking and uses cache-optimized lookups for quick responses. If a cache miss occurs, a very shallow search (depth 8) is performed to ensure high-quality moves without delay. If the computer starts the game, its first move is random.
+- Cache Management: Uses a thread-safe `ConcurrentHashMap` with a 200k entry limit and optimized object lifecycle to ensure stability and high performance.
 - Player Resets: Players are reset at the start of each game to initialize state (like the first move flag) and clear caches.
 - Alternate who goes first in subsequent games (for this implementation, we will handle a single game session or a simple loop).
 

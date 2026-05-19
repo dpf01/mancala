@@ -61,8 +61,8 @@ public class GameSearcher {
         }
     }
 
-    private static final int MAX_CACHE_SIZE = 500000;
-    private Map<BoardState, SearchEntry> memo = new ConcurrentHashMap<>();
+    private static final int MAX_CACHE_SIZE = 200000;
+    private final Map<BoardState, SearchEntry> memo = new ConcurrentHashMap<>();
     private int maxDepthLimit = -1;
     private long nodesVisited = 0;
     private long lastProgressReport = System.currentTimeMillis();
@@ -191,6 +191,14 @@ public class GameSearcher {
         return score;
     }
 
+    private void cacheResult(BoardState stateKey, Result result, int depth) {
+        if (stopped) return;
+        if (memo.size() >= MAX_CACHE_SIZE) {
+            memo.clear();
+        }
+        memo.put(stateKey, new SearchEntry(result, depth));
+    }
+
     public Result dfs(Board board, int playerIndex, int remainingDepth, int alpha, int beta) {
         nodesVisited++;
 
@@ -201,8 +209,16 @@ public class GameSearcher {
         }
 
         // Terminal states
-        if (board.getPlayer1Score() > 24) return new Result(WIN_SCORE + board.getPlayer1Score(), -1);
-        if (board.getPlayer2Score() > 24) return new Result(LOSS_SCORE - board.getPlayer2Score(), -1);
+        if (board.getPlayer1Score() > 24) {
+            Result res = new Result(WIN_SCORE + board.getPlayer1Score(), -1);
+            cacheResult(stateKey, res, remainingDepth);
+            return res;
+        }
+        if (board.getPlayer2Score() > 24) {
+            Result res = new Result(LOSS_SCORE - board.getPlayer2Score(), -1);
+            cacheResult(stateKey, res, remainingDepth);
+            return res;
+        }
 
         if (board.isGameOver()) {
             int[] currentPits = new int[Board.TOTAL_PITS];
@@ -210,37 +226,41 @@ public class GameSearcher {
             Board finalBoard = new Board(currentPits);
             finalBoard.collectRemaining();
             
+            Result res;
             if (finalBoard.getPlayer1Score() > finalBoard.getPlayer2Score()) {
-                return new Result(WIN_SCORE + finalBoard.getPlayer1Score(), -1);
+                res = new Result(WIN_SCORE + finalBoard.getPlayer1Score(), -1);
             } else if (finalBoard.getPlayer2Score() > finalBoard.getPlayer1Score()) {
-                return new Result(LOSS_SCORE - finalBoard.getPlayer2Score(), -1);
+                res = new Result(LOSS_SCORE - finalBoard.getPlayer2Score(), -1);
             } else {
-                return new Result(0, -1);
+                res = new Result(0, -1);
             }
+            cacheResult(stateKey, res, remainingDepth);
+            return res;
         }
 
         // Depth limit
         if (remainingDepth == 0) {
-            return new Result(evaluate(board), -1);
+            Result res = new Result(evaluate(board), -1);
+            // We usually don't cache depth 0 leaves in simple alpha-beta to save space,
+            // but for Mancala it might be useful. Let's cache them for now.
+            cacheResult(stateKey, res, 0);
+            return res;
         }
 
-        List<Integer> validMoves = new ArrayList<>();
         int start = (playerIndex == 1) ? 0 : 7;
         int end = (playerIndex == 1) ? 5 : 12;
-        for (int i = start; i <= end; i++) {
-            if (board.getPits(i) > 0) validMoves.add(i);
-        }
 
         int bestScore = (playerIndex == 1) ? Integer.MIN_VALUE : Integer.MAX_VALUE;
         int bestMove = -1;
         int[] savedPits = new int[Board.TOTAL_PITS];
         board.copyPitsTo(savedPits);
 
-        boolean pruned = false;
-        for (int move : validMoves) {
+        boolean cutoff = false;
+        for (int move = start; move <= end; move++) {
             if (stopped) break;
+            if (board.getPits(move) == 0) continue;
+
             boolean extraTurn = board.move(move, playerIndex);
-            
             int nextPlayer = extraTurn ? playerIndex : (playerIndex == 1 ? 2 : 1);
             
             Result res = dfs(board, nextPlayer, remainingDepth - 1, alpha, beta);
@@ -263,18 +283,14 @@ public class GameSearcher {
             }
 
             if (alpha >= beta) {
-                pruned = true;
+                cutoff = true;
                 break;
             }
         }
 
         Result finalResult = new Result(bestScore, bestMove);
-        if (!pruned) {
-            if (memo.size() >= MAX_CACHE_SIZE) {
-                memo.clear();
-            }
-            memo.put(stateKey, new SearchEntry(finalResult, remainingDepth));
-        }
+        // We cache even if cutoff occurred, as the bestMove found so far is still useful.
+        cacheResult(stateKey, finalResult, remainingDepth);
 
         return finalResult;
     }

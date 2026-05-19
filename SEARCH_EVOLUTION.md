@@ -70,8 +70,10 @@ Your idea of identifying "inevitable win/loss" states higher in the tree is exce
 - **Heuristic Refinement:** Corrected extra-turn logic and added stone weighting.
 - **Memory Optimization:** Replaced full PV string storage in transposition table with single `bestMove` integer to eliminate `OutOfMemoryError` and reduce GC pressure. Added PV reconstruction for display.
 - **Cache-Only Lookups:** Enabled fast responses by using existing transposition table entries without further tree expansion during the computer's turn.
-- **Thread Safety & Stability:** Switched to `ConcurrentHashMap` for the transposition table to prevent race conditions during background searches. Added a hard limit to the cache size (500k entries) to prevent `OutOfMemoryError`.
-- **Latency Optimization:** Reduced synchronization overhead and thread join times to ensure a smooth, lag-free user experience during human extra turns.
+- **Thread Safety & Stability:** Switched to `ConcurrentHashMap` for the transposition table to prevent race conditions during background searches. Added a hard limit to the cache size (200k entries) to prevent `OutOfMemoryError`.
+- **Cache Effectiveness:** Refined caching to include leaf nodes, terminal states, and cut-off moves from pruned branches, significantly reducing cache misses and improving computer play quality.
+- **Latency & UI Optimization:** Reordered board display and thinking synchronization to eliminate UI lag. Added a very shallow search fallback (depth 8) for cache misses, providing high-quality moves instantly.
+- **Memory Efficiency:** Optimized search loop to minimize object allocations, reducing GC overhead during intensive background searches.
 
 ---
 *Note: This critique is based on the state of the code as of May 2026.*

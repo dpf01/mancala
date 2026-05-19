@@ -64,13 +64,13 @@ public class MancalaGame {
 
                 extraTurn = board.move(move, currentPlayer.getPlayerIndex());
 
-                if (currentPlayer == human) {
-                    computer.stopThinking();
-                }
-
                 if (extraTurn && !board.isGameOver()) {
                     board.display();
                     System.out.println(currentPlayer.getName() + " gets an extra turn!");
+                }
+
+                if (currentPlayer == human) {
+                    computer.stopThinking();
                 }
             }
             
