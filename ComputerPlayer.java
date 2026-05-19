@@ -57,7 +57,7 @@ public class ComputerPlayer extends Player {
 
     @Override
     public int getMove(Board board) {
-        int move;
+        int move = -1;
         if (isFirstMoveOfGame) {
             isFirstMoveOfGame = false;
             move = getRandomMove(board);
@@ -65,15 +65,22 @@ public class ComputerPlayer extends Player {
             // Stop background thinking before move selection
             stopThinking();
 
-            // Cache-only lookup
-            move = searcher.getBestMoveFromCache(board, playerIndex);
-            
+            // Cache lookup with debug info
+            GameSearcher.RawEntry entry = searcher.getRawEntryFromCache(board, playerIndex);
+            if (entry == null) {
+                System.out.println("DEBUG: Cache MISS for state " + board.getStateKey() + " P" + playerIndex + " (Size: " + searcher.getCacheSize() + ")");
+            } else {
+                move = entry.bestMove;
+                if (move == -1) {
+                    System.out.println("DEBUG: Cache HIT but bestMove is -1 for state " + board.getStateKey() + " P" + playerIndex + " (Score: " + entry.score + ", Depth: " + entry.depth + ")");
+                }
+            }
+
             if (move == -1 || board.getPits(move) == 0) {
                 // If cache miss or illegal move, do a very quick shallow search.
-                // This should be fast because many nodes are already in the cache.
                 move = searcher.getBestMove(board, playerIndex, 8);
             }
-            
+
             if (move == -1 || board.getPits(move) == 0) {
                 // Final fallback to random
                 move = getRandomMove(board);

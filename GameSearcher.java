@@ -149,13 +149,29 @@ public class GameSearcher {
         return res.bestMove;
     }
 
-    public int getBestMoveFromCache(Board board, int playerIndex) {
+    public int getCacheSize() {
+        return memo.size();
+    }
+
+    public static class RawEntry {
+        public int score;
+        public int bestMove;
+        public int depth;
+
+        RawEntry(int score, int bestMove, int depth) {
+            this.score = score;
+            this.bestMove = bestMove;
+            this.depth = depth;
+        }
+    }
+
+    public RawEntry getRawEntryFromCache(Board board, int playerIndex) {
         BoardState stateKey = new BoardState(board, playerIndex);
         SearchEntry entry = memo.get(stateKey);
         if (entry != null) {
-            return entry.result.bestMove;
+            return new RawEntry(entry.result.score, entry.result.bestMove, entry.depth);
         }
-        return -1;
+        return null;
     }
 
     private int evaluate(Board board) {
