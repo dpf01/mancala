@@ -4,11 +4,11 @@ public class GameSearcher {
     private static final int WIN_SCORE = 10000;
     private static final int LOSS_SCORE = -10000;
 
-    private static class Result {
-        int score;
-        String pv;
+    public static class Result {
+        public int score;
+        public String pv;
 
-        Result(int score, String pv) {
+        public Result(int score, String pv) {
             this.score = score;
             this.pv = pv;
         }
@@ -64,27 +64,64 @@ public class GameSearcher {
     private int maxDepthLimit = -1;
     private long nodesVisited = 0;
     private long lastProgressReport = System.currentTimeMillis();
+    private volatile boolean stopped = false;
+    private volatile int bestMoveSoFar = -1;
 
     public GameSearcher(int maxDepthLimit) {
         this.maxDepthLimit = maxDepthLimit;
     }
 
-    public void run(Board initialBoard, int initialPlayerIndex) {
+    public void stop() {
+        this.stopped = true;
+    }
+
+    public int getBestMoveSoFar() {
+        return bestMoveSoFar;
+    }
+
+    public void run(Board initialBoard, int initialPlayerIndex, boolean verbose) {
+        stopped = false;
+        bestMoveSoFar = -1;
         int endDepth = (maxDepthLimit == -1) ? 50 : maxDepthLimit;
 
-        System.out.println("Starting Granular Iterative Deepening Search...");
-        initialBoard.display();
-        System.out.println("Initial Player: P" + initialPlayerIndex);
+        if (verbose) {
+            System.out.println("Starting Granular Iterative Deepening Search...");
+        }
 
-        for (int d = 1; d <= endDepth; d++) {
+        for (int d = 1; d <= endDepth && !stopped; d++) {
             nodesVisited = 0;
             long start = System.currentTimeMillis();
             Result res = dfs(initialBoard, initialPlayerIndex, d, Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);
             long end = System.currentTimeMillis();
             
-            System.out.printf("D%2d: Score: %5d | PV: %-25s | Nodes: %-8d | %dms\n", 
-                d, res.score, res.pv, nodesVisited, (end - start));
+            if (!stopped && res.pv.length() > 0) {
+                char moveChar = res.pv.charAt(0);
+                if (initialPlayerIndex == 1) {
+                    bestMoveSoFar = moveChar - 'A';
+                } else {
+                    bestMoveSoFar = (moveChar - 'a') + 7;
+                }
+                
+                if (verbose) {
+                    System.out.printf("D%2d: Score: %5d | PV: %-25s | Nodes: %-8d | %dms\n", 
+                        d, res.score, res.pv, nodesVisited, (end - start));
+                }
+            }
         }
+    }
+
+    public int getBestMove(Board board, int playerIndex, int depth) {
+        stopped = false;
+        Result res = dfs(board, playerIndex, depth, Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);
+        if (res.pv.length() > 0) {
+            char moveChar = res.pv.charAt(0);
+            if (playerIndex == 1) {
+                return moveChar - 'A';
+            } else {
+                return (moveChar - 'a') + 7;
+            }
+        }
+        return -1;
     }
 
     private int evaluate(Board board) {
@@ -120,7 +157,7 @@ public class GameSearcher {
         return score;
     }
 
-    private Result dfs(Board board, int playerIndex, int remainingDepth, int alpha, int beta) {
+    public Result dfs(Board board, int playerIndex, int remainingDepth, int alpha, int beta) {
         nodesVisited++;
 
         BoardState stateKey = new BoardState(board, playerIndex);
@@ -167,6 +204,7 @@ public class GameSearcher {
 
         boolean pruned = false;
         for (int move : validMoves) {
+            if (stopped) break;
             boolean extraTurn = board.move(move, playerIndex);
             
             char moveChar;

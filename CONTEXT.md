@@ -11,6 +11,7 @@
   - Capture if last piece lands in player's empty hole and opponent's adjacent hole is not empty.
   - Game ends when one side is empty.
 - Initial computer strategy: Random choice.
+- Enhanced computer strategy: Asynchronous tree search using minimax with alpha-beta pruning and iterative deepening. The computer searches while the human is thinking and responds quickly after the human moves. If the computer starts the game, its first move is random.
 - Alternate who goes first in subsequent games (for this implementation, we will handle a single game session or a simple loop).
 
 ## Design & Structure

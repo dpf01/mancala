@@ -31,7 +31,7 @@ java MancalaGame --search --depth <n>
 ```
 
 ## Game Modes
-- **Interactive Mode**: Play against the computer (Random strategy).
+- **Interactive Mode**: Play against the computer. The computer uses an advanced search strategy that thinks while you are making your move and responds quickly with its best move.
 - **Search Mode**: Exhaustively explores all possible games using minimax and identifies forced winning strategies. Supports depth-limited output and reports progress.
 
 ## Game Rules

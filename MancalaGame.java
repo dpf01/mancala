@@ -50,11 +50,28 @@ public class MancalaGame {
 
         System.out.println(currentPlayer.getName() + " starts the game.");
 
+        boolean isFirstMoveOfGame = true;
+
         while (!board.isGameOver()) {
             board.display();
             boolean extraTurn = true;
             while (extraTurn && !board.isGameOver()) {
-                int move = currentPlayer.getMove(board);
+                if (currentPlayer == human) {
+                    computer.startThinking(board);
+                }
+
+                int move;
+                if (isFirstMoveOfGame && currentPlayer == computer) {
+                    move = ((ComputerPlayer) computer).getRandomMove(board);
+                } else {
+                    move = currentPlayer.getMove(board);
+                }
+                isFirstMoveOfGame = false;
+
+                if (currentPlayer == human) {
+                    computer.stopThinking();
+                }
+
                 extraTurn = board.move(move, currentPlayer.getPlayerIndex());
                 if (extraTurn && !board.isGameOver()) {
                     board.display();
@@ -126,7 +143,7 @@ public class MancalaGame {
             }
 
             GameSearcher searcher = new GameSearcher(depth);
-            searcher.run(startBoard, startPlayer);
+            searcher.run(startBoard, startPlayer, true);
         } else if (playString != null) {
             playString(playString);
         } else {
