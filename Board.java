@@ -136,10 +136,10 @@ public class Board {
     }
 
     public void display() {
-        System.out.println("\n      " + pits[12] + "   " + pits[11] + "   " + pits[10] + "   " + pits[9] + "   " + pits[8] + "   " + pits[7]);
-        System.out.println("  " + pits[13] + "                          " + pits[6]);
-        System.out.println("      " + pits[0] + "   " + pits[1] + "   " + pits[2] + "   " + pits[3] + "   " + pits[4] + "   " + pits[5]);
-        System.out.println("      A   B   C   D   E   F\n");
+        System.out.printf("\n      %2d  %2d  %2d  %2d  %2d  %2d\n", pits[12], pits[11], pits[10], pits[9], pits[8], pits[7]);
+        System.out.printf("  %2d                          %2d\n", pits[13], pits[6]);
+        System.out.printf("      %2d  %2d  %2d  %2d  %2d  %2d\n", pits[0], pits[1], pits[2], pits[3], pits[4], pits[5]);
+        System.out.println("       A   B   C   D   E   F\n");
     }
 
     public int getPlayer1Score() {

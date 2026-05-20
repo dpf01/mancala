@@ -111,7 +111,7 @@ public class GameSearcher {
             
             if (!stopped && res.bestMove != -1 && verbose) {
                 String pv = reconstructPV(initialBoard, initialPlayerIndex, d);
-                System.out.printf("D%2d: Score: %5d | PV: %-25s | Nodes: %-8d | %dms\n", 
+                System.out.printf("D%2d: Score: %6d | PV: %-25s | Nodes: %-8d | %dms\n", 
                     d, res.score, pv, nodesVisited, (end - start));
             }
         }

@@ -77,11 +77,13 @@ public class MancalaGame {
 
                 if (currentPlayer == human) {
                     computer.stopThinking();
-                } else {
-                    System.out.println("Play-string: " + board.getPlayString());
                 }
             }
             
+            if (currentPlayer == computer && !board.isGameOver()) {
+                System.out.println("Play-string: " + board.getPlayString());
+            }
+
             if (!board.isGameOver()) {
                 currentPlayer = (currentPlayer == human) ? computer : human;
             }
