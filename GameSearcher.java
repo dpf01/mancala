@@ -99,6 +99,8 @@ public class GameSearcher {
 
         if (verbose) {
             System.out.println("Starting Iterative Deepening Search...");
+            System.out.println("Optimizing for P" + initialPlayerIndex + " (" + (initialPlayerIndex == 1 ? "User" : "Computer") + ")");
+            System.out.println("Note: Positive scores favor P1 (User), negative scores favor P2 (Computer).");
         }
 
         for (int d = 1; d <= endDepth && !stopped; d++) {
